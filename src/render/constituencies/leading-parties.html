@@ -1,58 +1,103 @@
 ---
 layout: "default"
 title: "Leading party for each constituency"
+standalone: true
+scripts: ['/dist/js/vendor/list.1.1.1.min.js']
 ---
-            <div class="hero">
-                <div class="l-constrain">
-                    <h1 class="hero__impact">
-                        Vote for Policies Data
-                    </h1>
-                    <h2 class="hero__strapline">
-                        Leading party for each constituency
-                    </h2>
+<div class="hero">
+    <div class="l-constrain">
+        <h1 class="hero__impact">
+            Vote for Policies Data
+        </h1>
 
-                    <!-- TODO - Refactor layout as it's very fixed right now -->
-                    <div id="left_column">
-                        <section id="data_table">
-                          <table>
-                            <thead>
-                            <tr>
-                              <th>Constituency</th>
-                              <th>Leading Party</th>
-                            </tr>
-                            </thead>
-                            <tbody id="constituency-rows">
-                                <tr>
-                                    <td colspan="2">
-                                        Loading
-                                    </td>
-                                </tr>
-                            </tbody>
-                            </table>
+        <h2 class="hero__strapline">
+            Leading party for each constituency
+        </h2>
 
-                        </section>
-                    </div>
-                    <div id="right_column">
-                        <section id="map">
-                        </section>
-                    </div>
+    </div>
+</div>
 
-                </div>
-            </div>
-            <div class="l-constrain">
-                <div class="l-constrain__inner">
-                    <div class="content__wrap">
-                        <p>Data updated every hour</p>
-                        <a href="https://github.com/martinjc/UK-GeoJSON">GeoJSON and TopoJSON UK Boundary Data</a> by Martin Chorley is licensed under a Creative Commons Attribution 4.0 International License
-                    </div>
-                </div>
+
+<div class="l-constrain">
+    <div class="l-grid l-grid--1to2-col">
+
+        <div class="l-grid-unit">
+            <section id="map">
+            </section>
+        </div>
+
+        <div class="l-grid-unit">
+
+            <nav class="tabber__nav">
+            </nav>
+
+            <div id="constituency-tab-container" style="display: none;">
+                <div id="constituencies-list"></div>
+                <div id="pie-chart-results"></div>
             </div>
 
-            <script id="constituency-list" type="text/x-handlebars-template">
-              {{#each constituencies}}
-              <tr class="{{slugify constituency_name}}">
-                <td>{{ constituency_name }}</td>
-                <td>{{ party_name }}</td>
-              </tr>
-              {{/each}}
-            </script>
+            <div id="trends-tab-container" style="display: none;">
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!--<div class="l-constrain">-->
+    <!--<div class="l-constrain__inner">-->
+
+        <!--<div class="content__wrap">-->
+            <!--<p>Data updated every hour</p>-->
+            <!--<a href="https://github.com/martinjc/UK-GeoJSON">GeoJSON and TopoJSON UK Boundary Data</a> by Martin Chorley-->
+            <!--is licensed under a Creative Commons Attribution 4.0 International License-->
+        <!--</div>-->
+    <!--</div>-->
+<!--</div>-->
+
+<script id="constituency-list-template" type="text/x-handlebars-template">
+    <div class="l-constrain l-constrain--narrow l-constrain--no-overflow">
+        <div id="constituency-search" class="search-list constituency-search">
+            <fieldset>
+                <label for="consituency-search-input" class="form__label u-visuallyhidden">Search for a
+                    consitutency:</label>
+                <input id="consituency-search-input" class="search form__input"
+                       placeholder="Enter a constituency name"/>
+            </fieldset>
+            <ul class="search-list__results list">
+                {{#each constituencies}}
+                <li>
+                    <a href="#constituencies/{{constituency_slug}}" data-constituency-slug="{{constituency_slug}}"
+                       data-constituency-name="{{constituency_name}}" class="constituency">{{constituency_name}}</a>
+                </li>
+                {{/each}}
+            </ul>
+        </div>
+    </div>
+</script>
+
+<script id="party-trends-navigation-template" type="text/x-handlebars-template">
+    {{#each items}}
+    <a href="#party-trends/{{ link }}" class="btn l-flag{{#unless selected}} btn--highlight-block{{/unless}}">
+        <span class="l-flag__body">
+        {{ name }}
+        </span>
+    </a>
+    {{/each}}
+</script>
+
+<script id="tabber-navigation-template" type="text/x-handlebars-template">
+
+    <div class="l-constrain l-constrain--no-overflow l-constrain--relative u-no-mobile-padding tabber__nav--expanded">
+        <ul role="tablist">
+            {{#each items}}
+            <li role="presentation" class="tabber__nav__expand">
+                <a href="#{{ link }}" role="tab" aria-controls="{{link}}" {{#if selected}} aria-selected="true" {{/if}}
+                class="tabber__nav__link">
+                {{name}}
+                </a>
+            </li>
+            {{/each}}
+        </ul>
+    </div>
+</script>

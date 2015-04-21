@@ -12,8 +12,22 @@ var issueResultsTemplatePromise = $.ajax({
     return Handlebars.compile(html);
 });
 
+var issueResultsSimpleTemplatePromise = $.ajax({
+    url: '/partials/results/issue-results-simple.html',
+    dataType: 'text'
+}).then(function (html) {
+    return Handlebars.compile(html);
+});
+
 var issueResultTemplatePromise = $.ajax({
     url: '/partials/results/issue-result.html',
+    dataType: 'text'
+}).then(function (html) {
+    return Handlebars.compile(html);
+});
+
+var issueResultSimpleTemplatePromise = $.ajax({
+    url: '/partials/results/issue-result-simple.html',
     dataType: 'text'
 }).then(function (html) {
     return Handlebars.compile(html);
@@ -56,15 +70,17 @@ function formatIssuesForView(issues) {
  *
  * @param issues
  * @param target
+ * @param {boolean} simple   use simple template
  * @constructor
  */
-function IssueResults(issues, target) {
+function IssueResults(issues, target, simple) {
     this.target = target || '#issue-results';
+    this.simple = simple === true;
 
     this.issues = formatIssuesForView(issues).map(function (issue, i) {
         issue.rank = i;
-        return new IssueResult(issue);
-    });
+        return new IssueResult(issue, this.simple);
+    }.bind(this));
 
     this.render();
 }
@@ -75,8 +91,9 @@ function IssueResults(issues, target) {
  * @param issue
  * @constructor
  */
-function IssueResult(issue) {
+function IssueResult(issue, simple) {
     this.selected = issue.results[0];
+    this.simple = simple;
     _.assign(this, issue);
 }
 
@@ -86,8 +103,9 @@ function IssueResult(issue) {
 IssueResult.prototype.render = function render() {
 
     var target = document.querySelector('.issue-' + this.issue_slug);
+    var promise = this.simple ? issueResultSimpleTemplatePromise : issueResultTemplatePromise;
 
-    issueResultTemplatePromise.then(function (compiledTemplateFn) {
+    promise.then(function (compiledTemplateFn) {
 
         target.innerHTML = compiledTemplateFn(this);
 
@@ -100,6 +118,12 @@ IssueResult.prototype.render = function render() {
         });
 
     }.bind(this));
+
+};
+
+IssueResult.prototype.clear = function clear() {
+
+    document.querySelector('.issue-' + this.issue_slug).innerHTML = '';
 
 };
 
@@ -119,8 +143,9 @@ IssueResult.prototype.selectResult = function selectResult(result) {
 IssueResult.prototype.renderSelected = function renderSelected() {
 
     var target = document.querySelector('.issue-' + this.issue_slug);
+    var promise = this.simple ? issueResultSimpleTemplatePromise : issueResultTemplatePromise;
 
-    issueResultTemplatePromise.then(function (compiledTemplateFn) {
+    promise.then(function (compiledTemplateFn) {
 
         var className = 'result-issue-total__leader';
         target.getElementsByClassName(className)[0].innerHTML = $(compiledTemplateFn(this)).find('.' + className).html();
@@ -134,7 +159,9 @@ IssueResult.prototype.renderSelected = function renderSelected() {
  */
 IssueResults.prototype.render = function render() {
     var target = document.querySelector(this.target);
-    issueResultsTemplatePromise.then(function (compiledTemplateFn) {
+    var promise = this.simple ? issueResultsSimpleTemplatePromise : issueResultsTemplatePromise;
+
+    promise.then(function (compiledTemplateFn) {
 
         target.innerHTML = compiledTemplateFn({
             issues: this.issues

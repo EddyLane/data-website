@@ -12,6 +12,13 @@ var pieChartResultsTemplatePromise = $.ajax({
     return Handlebars.compile(html);
 });
 
+var pieChartResultsSimpleTemplatePromise = $.ajax({
+    url: '/partials/results/pie-chart-simple.html',
+    dataType: 'text'
+}).then(function (html) {
+    return Handlebars.compile(html);
+});
+
 var responsiveOptions = [
     ['screen and (min-width: 100px)', {
         chartPadding: 0,
@@ -78,10 +85,12 @@ function setupData(data) {
  *
  * @param {Array} results
  * @param {string} target       css selector
+ * @param {boolean} simple      simple mode
  * @constructor
  */
-function PieChart(results, target) {
+function PieChart(results, target, simple) {
 
+    this.simple = simple === true;
     this.total = parseInt(results.surveys_count, 10);
     this.parties = setupData(results.parties);
 
@@ -96,14 +105,18 @@ function PieChart(results, target) {
  */
 PieChart.prototype.render = function render() {
 
-    pieChartResultsTemplatePromise.then(function (compiledTemplateFn) {
+    var promise = this.simple ? pieChartResultsSimpleTemplatePromise : pieChartResultsTemplatePromise;
+
+    promise.then(function (compiledTemplateFn) {
 
         this.target.innerHTML = compiledTemplateFn({
             parties: this.parties.keyData,
             total: this.total
         });
 
-        new Chartist.Pie(document.querySelector('#pie-chart'), this.parties.chartData, options, responsiveOptions);
+        if (!this.simple) {
+            new Chartist.Pie(document.querySelector('#pie-chart'), this.parties.chartData, options, responsiveOptions);
+        }
 
     }.bind(this));
 
