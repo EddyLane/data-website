@@ -38,6 +38,8 @@ function Map(mapSelector, tableSelector) {
 
     this.clickCbs = [];
 
+    this.marginalConstituenciesPromise = $.getJSON(CONFIG.apiBaseUrl + '/constituencies.json?filters=marginal');
+
     var parentElement = document.querySelector(mapSelector);
     var e = document.createElement('object');
     var $e = $(e);
@@ -155,24 +157,15 @@ Map.prototype.getToggleSelectedAreaFn = function toggleSelectedArea(graphics) {
     function toggleSelectedArea (constituencyPath) {
         // Handle map zooming
         var x, y, k;
-        var changedArea = false;
-        var slugified;
 
         if (constituencyPath && this.centered !== constituencyPath) {
-
-            console.log('Zooming');
-
             var centroid = this.path.centroid(constituencyPath);
             x = centroid[0];
             y = centroid[1];
             k = 8;
             this.centered = constituencyPath;
-            changedArea = true;
 
         } else {
-
-            console.log('Zooming out');
-
             x = 594 / 2;
             y = 806 / 2;
             k = 1;
@@ -238,12 +231,18 @@ Map.prototype.resetColours = function resetColours () {
 
     leadingConstituenciesPromise.then(function (constituencies) {
 
-        this.loadedSvg.then(function (svgDoc) {
+         this.loadedSvg.then(function (svgDoc) {
+
+             console.log('resetting colours');
             _.forEach(constituencies, function (constituency) {
-                var constituencyNode = svgDoc.querySelector('.' + slugify(constituency.constituency_name));
-                constituencyNode.classList.remove('party-' + constituency.party_name.toLowerCase().replace(/ /g, '-'));
+                var slug = slugify(constituency.constituency_name);
+                var constituencyNode = svgDoc.querySelector('.' + slug);
+                constituencyNode.setAttribute('class', 'area ' + slug);
                 constituencyNode.style.fill = null;
+
+
             });
+
         });
 
     }.bind(this));
@@ -276,6 +275,45 @@ Map.prototype.tabulate = function tabulate(graphics, constituencies) {
  * Toggle different map modes
  */
 
+Map.prototype.mapStrengthOfIssue = function mapStrengthOfIssue (issueSlug) {
+
+    this.resetColours();
+
+    //@TODO SWAP THESE TWO WHEN API SUPPORTS
+    //$.getJSON(CONFIG.apiBaseUrl + '/constituencies/results/issues/' + issueSlug + '/parties.json?filters=leading').then(this.mapConstituencyParties.bind(this);
+    $.getJSON(CONFIG.apiBaseUrl + '/constituencies/results/parties.json?filters=leading').then(this.mapConstituencyParties.bind(this));
+
+};
+
+Map.prototype.mapConstituencyParties = function mapConstituencyParties (constituencies) {
+    this.loadedSvg.then(function (svgDoc) {
+
+        console.log('mapping');
+
+        _.forEach(constituencies, function (constituency) {
+            var constituencyNode = svgDoc.querySelector('.' + slugify(constituency.constituency_name));
+            constituencyNode.classList.add('party-' + constituency.party_name.toLowerCase().replace(/ /g, '-'));
+        });
+    });
+};
+
+
+Map.prototype.mapMarginalConstituencies = function mapMarginalConstituencies () {
+
+    var mapFn = this.mapConstituencyParties.bind(this);
+
+    this.resetColours();
+
+    this.marginalConstituenciesPromise.then(function (marginalConstituencies) {
+        leadingConstituenciesPromise.then(function (allConstituencies) {
+
+            mapFn(_.filter(allConstituencies, function (constituency) {
+                return _.find(marginalConstituencies, { constituency_name: constituency.constituency_name });
+            }));
+        });
+    });
+
+};
 
 Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
 
@@ -285,11 +323,12 @@ Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
         .then(function (constituencies) {
 
             // Find maximum votes_percentage
-            var max_value = 0.0;
+            // Find maximum votes_percentage
+            var max = 0.0;
 
             _.forEach(constituencies, function (constituency) {
-                if (constituency.votes_percentage > max_value) {
-                    max_value = constituency.votes_percentage
+                if (constituency.votes_percentage > max) {
+                    max = constituency.votes_percentage;
                 }
             });
 
@@ -301,13 +340,13 @@ Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
             }
 
             // Set colour scale
-            var colours = d3.scale.quantize().domain([0, max_value]).range(range);
+            var colours = d3.scale.quantize().domain([0, max]).range(range);
 
             this.loadedSvg.then(function (svgDoc) {
                 _.forEach(constituencies, function (constituency) {
                     var constituencyNode = svgDoc.querySelector('.' + slugify(constituency.constituency_name));
                     d3.select(constituencyNode)
-                        .style("fill", function (d) {
+                        .style("fill", function () {
                             if (constituency.votes_percentage == 0.0) {
                                 return "#c0c0c0"
                             } else {
@@ -326,18 +365,7 @@ Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
  * Add classes on to the constituency paths in the SVG from a given set of constituency results
  */
 Map.prototype.mapLeadingConstituencyResults = function mapLeadingConstituencyResults() {
-
-    leadingConstituenciesPromise.then(function (constituencies) {
-
-        this.loadedSvg.then(function (svgDoc) {
-            _.forEach(constituencies, function (constituency) {
-                var constituencyNode = svgDoc.querySelector('.' + slugify(constituency.constituency_name));
-                constituencyNode.classList.add('party-' + constituency.party_name.toLowerCase().replace(/ /g, '-'));
-            });
-        });
-
-    }.bind(this));
-
+    leadingConstituenciesPromise.then(this.mapConstituencyParties.bind(this));
 };
 
 Handlebars.registerHelper('slugify', slugify);

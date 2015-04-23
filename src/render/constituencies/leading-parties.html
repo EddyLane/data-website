@@ -96,13 +96,25 @@ scripts: ['/dist/js/vendor/list.1.1.1.min.js']
 </script>
 
 <script id="party-trends-chrolopleth-template" type="text/x-handlebars-template">
-    <a class="btn l-flag btn-clear-filter" href="#party-trends"><- Back</a>
+    <a class="btn l-flag btn-clear-filter" href="#party-trends"><- Strength of political parties</a>
     <hr>
     {{#each items}}
     <div class="party-block party-block--{{slug}}" {{#if selected}}style="background-color: #F7F7C4"{{/if}}>
         <a class="h-group__main filter-party-link" href="#party-trends?filter=strength-of-political-parties&party={{slug}}">
             <span class="party-block__party"> {{name}} </span>
             <img src="/img/parties/{{ slug }}.png" class="party-block__party-logo" alt="">
+        </a>
+    </div>
+    {{/each}}
+</script>
+
+<script id="leading-party-by-issue-template" type="text/x-handlebars-template">
+    <a class="btn l-flag btn-clear-filter" href="#party-trends"><- Leading party by issue</a>
+    <hr>
+    {{#each items}}
+    <div class="party-block" {{#if selected}}style="background-color: #F7F7C4"{{/if}}>
+        <a class="h-group__main filter-party-link" href="#party-trends?filter=leading-party-by-issue&issue={{slug}}">
+            <span class="party-block__party"> {{name}} </span>
         </a>
     </div>
     {{/each}}
