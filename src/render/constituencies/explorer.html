@@ -1,7 +1,6 @@
 ---
 layout: "default"
-title: "Leading party for each constituency"
-standalone: true
+title: "Constituency Explorer"
 scripts: ['/dist/js/vendor/list.1.1.1.min.js']
 ---
 <div class="hero">
@@ -11,7 +10,7 @@ scripts: ['/dist/js/vendor/list.1.1.1.min.js']
         </h1>
 
         <h2 class="hero__strapline">
-            Leading party for each constituency
+            Constituency explorer
         </h2>
 
     </div>
@@ -24,6 +23,9 @@ scripts: ['/dist/js/vendor/list.1.1.1.min.js']
         <div class="l-grid-unit">
             <section id="map">
             </section>
+            <div id="map-key">
+
+            </div>
         </div>
 
         <div class="l-grid-unit">
@@ -45,16 +47,18 @@ scripts: ['/dist/js/vendor/list.1.1.1.min.js']
     </div>
 </div>
 
-<!--<div class="l-constrain">-->
-<!--<div class="l-constrain__inner">-->
 
-<!--<div class="content__wrap">-->
-<!--<p>Data updated every hour</p>-->
-<!--<a href="https://github.com/martinjc/UK-GeoJSON">GeoJSON and TopoJSON UK Boundary Data</a> by Martin Chorley-->
-<!--is licensed under a Creative Commons Attribution 4.0 International License-->
-<!--</div>-->
-<!--</div>-->
-<!--</div>-->
+
+
+<div class="l-constrain">
+    <div class="l-constrain__inner">
+        <div class="content__wrap">
+            <p>Data updated every hour</p>
+            <a href="https://github.com/martinjc/UK-GeoJSON">GeoJSON and TopoJSON UK Boundary Data</a> by Martin Chorley
+            is licensed under a Creative Commons Attribution 4.0 International License
+        </div>
+    </div>
+</div>
 
 <script id="constituency-list-template" type="text/x-handlebars-template">
     <div class="l-constrain l-constrain--narrow l-constrain--no-overflow">
@@ -81,7 +85,8 @@ scripts: ['/dist/js/vendor/list.1.1.1.min.js']
 
     <div class="trends-menu">
         {{#each items}}
-        <a href="#party-trends?filter={{ link }}" class="btn l-flag{{#unless selected}} btn--highlight-block{{/unless}}">
+        <a href="#party-trends?filter={{ link }}"
+           class="btn l-flag{{#unless selected}} btn--highlight-block{{/unless}}">
         <span class="l-flag__body">
         {{ name }}
         </span>
@@ -96,26 +101,26 @@ scripts: ['/dist/js/vendor/list.1.1.1.min.js']
 </script>
 
 <script id="party-trends-chrolopleth-template" type="text/x-handlebars-template">
-    <a class="btn l-flag btn-clear-filter" href="#party-trends"><- Strength of political parties</a>
+    <a class="btn l-flag btn-clear-filter" href="#party-trends">&#x25c0; Strength of political parties</a>
     <hr>
     {{#each items}}
-    <div class="party-block party-block--{{slug}}" {{#if selected}}style="background-color: #F7F7C4"{{/if}}>
-        <a class="h-group__main filter-party-link" href="#party-trends?filter=strength-of-political-parties&party={{slug}}">
-            <span class="party-block__party"> {{name}} </span>
-            <img src="/img/parties/{{ slug }}.png" class="party-block__party-logo" alt="">
-        </a>
+    <div class="party-block party-block--{{slug}}" {{#if selected}}style="background-color: #F7F7C4" {{/if}}>
+    <a class="h-group__main filter-party-link" href="#party-trends?filter=strength-of-political-parties&party={{slug}}">
+        <span class="party-block__party"> {{name}} </span>
+        <img src="/img/parties/{{ slug }}.png" class="party-block__party-logo" alt="">
+    </a>
     </div>
     {{/each}}
 </script>
 
 <script id="leading-party-by-issue-template" type="text/x-handlebars-template">
-    <a class="btn l-flag btn-clear-filter" href="#party-trends"><- Leading party by issue</a>
+    <a class="btn l-flag btn-clear-filter" href="#party-trends">&#x25c0; Leading party by issue</a>
     <hr>
     {{#each items}}
-    <div class="party-block" {{#if selected}}style="background-color: #F7F7C4"{{/if}}>
-        <a class="h-group__main filter-party-link" href="#party-trends?filter=leading-party-by-issue&issue={{slug}}">
-            <span class="party-block__party"> {{name}} </span>
-        </a>
+    <div class="party-block"{{#if selected}} style="background-color: #F7F7C4"{{/if}}>
+    <a class="h-group__main filter-party-link" href="#party-trends?filter=leading-party-by-issue&issue={{slug}}">
+        <span class="party-block__party"> {{name}} </span>
+    </a>
     </div>
     {{/each}}
 </script>
@@ -132,5 +137,14 @@ scripts: ['/dist/js/vendor/list.1.1.1.min.js']
             </li>
             {{/each}}
         </ul>
+    </div>
+</script>
+
+<script id="range-template" type="text/x-handlebars-template">
+    <div style="text-align:center;">
+        {{#each range}}
+        <div style="width:20px; height: 20px; display:inline-block; background-color:{{this}}">
+        </div>
+        {{/each}}
     </div>
 </script>

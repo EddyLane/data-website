@@ -38,7 +38,7 @@ router.get(/countries\/results/, function () {
 /**
  * Constituency routes
  */
-router.get(/constituencies\/leading-parties/, function () {
+router.get(/constituencies\/explorer/, function () {
     new ConsituencyLeadingParties();
 });
 

@@ -228,6 +228,7 @@ Map.prototype.reset = function reset () {
  * Reset all map colours
  */
 Map.prototype.resetColours = function resetColours () {
+    this.removeRange();
 
     leadingConstituenciesPromise.then(function (constituencies) {
 
@@ -284,9 +285,8 @@ Map.prototype.mapStrengthOfIssue = function mapStrengthOfIssue (issueSlug) {
 };
 
 Map.prototype.mapConstituencyParties = function mapConstituencyParties (constituencies) {
-    this.loadedSvg.then(function (svgDoc) {
 
-        console.log('mapping');
+    this.loadedSvg.then(function (svgDoc) {
 
         _.forEach(constituencies, function (constituency) {
             var constituencyNode = svgDoc.querySelector('.' + slugify(constituency.constituency_name));
@@ -313,6 +313,17 @@ Map.prototype.mapMarginalConstituencies = function mapMarginalConstituencies () 
 
 };
 
+Map.prototype.renderRange = function renderRange(range) {
+    this.rangeTemplateFn = Handlebars.compile(document.querySelector('#range-template').innerHTML);
+    document.querySelector('#map-key').innerHTML = this.rangeTemplateFn({
+        range: range
+    });
+};
+
+Map.prototype.removeRange = function removeRange() {
+    document.querySelector('#map-key').innerHTML = '';
+};
+
 Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
 
     this.resetColours();
@@ -321,14 +332,15 @@ Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
         .then(function (constituencies) {
 
             // Find maximum votes_percentage
-            // Find maximum votes_percentage
-            var max = 0.0;
+            //var max = 0.0;
+            //
+            //_.forEach(constituencies, function (constituency) {
+            //    if (constituency.votes_percentage > max) {
+            //        max = constituency.votes_percentage;
+            //    }
+            //});
 
-            _.forEach(constituencies, function (constituency) {
-                if (constituency.votes_percentage > max) {
-                    max = constituency.votes_percentage;
-                }
-            });
+            var max = 60;
 
             // Find party colours
             for (var i = 0; i < parties.length; i++) {
@@ -336,6 +348,8 @@ Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
                     var range = parties[i]['colour_scale'];
                 }
             }
+
+            this.renderRange(range);
 
             // Set colour scale
             var colours = d3.scale.quantize().domain([0, max]).range(range);
@@ -348,7 +362,7 @@ Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
                             if (constituency.votes_percentage == 0.0) {
                                 return "#c0c0c0"
                             } else {
-                                return colours(constituency.votes_percentage);
+                                return colours(constituency.votes_percentage * 2);
                             }
                         });
                 });
