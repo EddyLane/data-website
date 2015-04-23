@@ -5,28 +5,34 @@ var Map = require('../map');
 var $ = require('jQuery');
 var Grapnel = require('Grapnel');
 var _ = require('lodash');
-var Autocomplete = require('../autocomplete');
 var VFP_CONFIG_DATA = require('../config');
 var IssueResults = require('../results/issue-results');
-var PieChart = require('../results/pie-chart');
+var ConstituencyTab = require('./tabs/constituency-tab');
+
 var constituenciesPromise = $.Deferred();
+var filter;
 
-function LeadingParties() {
-
-    this.map = new Map('#map', '#constituency-rows');
-    var tabs = new TabNavigation(this.map);
-
-    tabs.render();
-}
 
 /**
- * Get the API url for a specific constituency
+ * Gets a slugified version of a string
  *
- * @param {string} slug
+ * @param {string} text
  * @returns {string}
  */
-function getConstituencyUrl(slug) {
-    return VFP_CONFIG_DATA.apiBaseUrl + '/constituencies/' + slug + '/results.json';
+function slugify(text) {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start of text
+        .replace(/-+$/, '');            // Trim - from end of text
+}
+
+
+function LeadingParties() {
+    this.map = new Map('#map', '#constituency-rows');
+    var tabs = new TabNavigation(this.map);
+    tabs.render();
 }
 
 /**
@@ -41,45 +47,108 @@ function TabNavigation(map) {
     this.tab = null;
 
     this.navItems = [
-        {name: 'Party trends', link: 'party-trends', selected: false},
-        {name: 'Constituencies', link: 'constituencies', selected: false}
+        {name: 'Party trends', link: 'party-trends', selected: false, tab: new PartyTrendsTab(map)},
+        {
+            name: 'Constituencies',
+            link: 'constituencies',
+            selected: false,
+            tab: new ConstituencyTab(map, constituenciesPromise)
+        }
     ];
+
+
+    window.addEventListener("hashchange", function (e) {
+
+        var newFilter = e.newURL.split('?');
+
+        if (newFilter.length > 1) {
+            map.resetColours();
+        } else if (filter) {
+            window.history.pushState({path: e.newURL}, e.newURL, e.newURL + '?filter=' + filter);
+        }
+
+    }, false);
 
     var router = new Grapnel();
 
-    this.constituencyTab = new ConstituencyTab(map);
-    this.trendsTab = new PartyTrendsTab(map);
+    this.navItems.forEach(function (item) {
+        item.tab.render();
+    });
+
+
+    /**
+     * Party filter
+     */
+    router.get(/filter=strength-of-political-parties&party=(.*)$/i, function (req) {
+
+        var partySlug = req.params[0];
+        var chloroplethTab = this.navItems[0].tab.navItems[0].tab;
+        chloroplethTab.selectBySlug(partySlug);
+        map.mapStrengthOfParty(partySlug);
+
+    }.bind(this));
+
+    /**
+     * Main filter
+     */
+    router.get(/filter=(.*)$/i, function (req) {
+
+        filter = req.params[0];
+
+        var filterItem = req.params[0].split('&')[0];
+
+        this.navItems[0].tab.navItems.forEach(function (navItem) {
+            navItem.selected = false;
+        });
+
+        var foundItem = _.find(this.navItems[0].tab.navItems, {link: filterItem});
+
+        if (foundItem) {
+            foundItem.selected = true;
+            this.navItems[0].tab.render();
+        }
+
+        switch (filterItem) {
+
+            case 'leading-party-for-each-constituency':
+                map.mapLeadingConstituencyResults();
+                break;
+
+
+        }
+
+    }.bind(this));
+
 
     router.get(':tabItem/:item?', function (req) {
-        var found;
+        var found,
+            tabItem = req.params.tabItem.split('?')[0];
 
         _.each(this.navItems, function (e) {
             e.selected = false;
         });
 
-        found = _.find(this.navItems, {link: req.params.tabItem});
-        found.selected = true;
+        found = _.find(this.navItems, {link: tabItem});
 
-        this.render();
-
-        if (this.tab) {
+        if (this.tab && this.tab !== found.tab) {
             this.tab.display(false);
             map.reset();
         }
 
-        switch (found.name) {
+        if (found) {
+            found.selected = true;
+            found.tab.display(true);
 
-            case 'Constituencies':
-                this.tab = this.constituencyTab;
-                break;
+            this.tab = found.tab;
 
-            case 'Party trends':
-                this.tab = this.trendsTab;
-                break;
-
+            if (this.tab instanceof PartyTrendsTab) {
+                this.tab.navItems.forEach(function (tab) {
+                    tab.selected = false;
+                });
+            }
         }
 
-        this.tab.display(true);
+        this.render();
 
     }.bind(this));
 
@@ -92,18 +161,23 @@ function TabNavigation(map) {
             if (this.tab instanceof PartyTrendsTab) {
                 this.tab.display(false);
                 this.navItems[0].selected = false;
-                this.tab = this.constituencyTab;
+                this.tab = this.navItems[1].tab;
                 this.navItems[1].selected = true;
                 this.tab.display(true);
                 this.render();
             }
 
-            this.constituencyTab.selectConstituencyBySlug(found.constituency_slug);
-            window.history.pushState(found, found.constituency_name, "#constituencies/" + found.constituency_slug);
+            this.navItems[1].tab.selectConstituencyBySlug(found.constituency_slug);
+            var url = "#constituencies/" + found.constituency_slug;
+
+            if (filter) {
+                url += '?filter=' + filter;
+            }
+
+            window.history.pushState(found, found.constituency_name, url);
 
         }.bind(this));
     }.bind(this));
-
 
 
 }
@@ -120,136 +194,133 @@ TabNavigation.prototype.render = function render() {
  */
 function PartyTrendsTab(map) {
 
-    var router = new Grapnel();
-
-    this.navItems = [
-        { name: 'Strength of political parties across the UK', link: 'strength-of-political-parties-across-the-uk', selected: false },
-        { name: 'Leading party by issue', link: 'leading-party-by-issue', selected: false },
-        { name: 'Leading party for each constituency', link: 'leading-party-for-each-constituency', selected: false },
-        { name: 'Leading parties in the marginal constituencies', link: 'leading-parties-in-marginal-constituencies', selected: false }
-    ];
-
     this.templateFn = Handlebars.compile(document.querySelector('#party-trends-navigation-template').innerHTML);
     this.element = document.querySelector('#trends-tab-container');
 
-    router.get('party-trends/:trendType', function (req) {
-
-        var found = _.find(this.navItems, { link: req.params.trendType });
-        this.navItems.forEach(function(navItem) {
-            navItem.selected = false;
-        });
-
-        if (found) {
-
-            found.selected = true;
-            map.reset();
-            map.resetColours();
-            this.render();
-
-            switch(found.name) {
-
-                case 'Strength of political parties across the UK':
-                    new ChloroplethTab(this);
-                    break;
-
-                case 'Leading party for each constituency':
-                    map.mapLeadingConstituencyResults();
-                    break;
-
-                default:
-                    break;
-
-            }
-        }
+    this.navItems = [
+        {
+            name: 'Strength of political parties across the UK',
+            link: 'strength-of-political-parties',
+            selected: false,
+            tab: new ChloroplethTab(this, map)
+        },
+        //{name: 'Leading party by issue', link: 'leading-party-by-issue', selected: false},
+        {name: 'Leading party for each constituency', link: 'leading-party-for-each-constituency', selected: false}
+        //{
+        //    name: 'Leading parties in the marginal constituencies',
+        //    link: 'leading-parties-in-marginal-constituencies',
+        //    selected: false
+        //}
+    ];
 
 
-    }.bind(this));
 
     this.render();
 
-    function ChloroplethTab (parentTab) {
-        console.log('errrrr');
-        this.parentTab = parentTab;
-        parentTab.element.innerHTML = '';
-    }
-
-    ChloroplethTab.prototype.render = function render () {
-
-    };
-
-
-
 }
+PartyTrendsTab.prototype.render = function render() {
 
-PartyTrendsTab.prototype.render = function render () {
-    this.element.innerHTML = this.templateFn({
-        items: this.navItems
-    });
+    var selected = _.find(this.navItems, 'selected');
+
+    if (selected && selected.tab) {
+
+        selected.tab.render();
+
+    } else {
+        this.element.innerHTML = this.templateFn({
+            items: this.navItems
+        });
+    }
 };
 
 PartyTrendsTab.prototype.display = function (display) {
     $(this.element).toggle(display);
 };
 
-
 /**
- * ConsituencyTab
+ *
+ * @param parentTab
  * @param map
  * @constructor
  */
-function ConstituencyTab(map) {
+function ChloroplethTab(parentTab, map) {
 
-    var router = new Grapnel();
+    this.parentTab = parentTab;
+    this.templateFn = Handlebars.compile(document.querySelector('#party-trends-chrolopleth-template').innerHTML);
+    this.element = this.parentTab.element;
 
-    this.element = document.querySelector('#constituency-tab-container');
-    this.$element = $(this.element);
+    this.partiesPromise = $.getJSON(VFP_CONFIG_DATA.apiBaseUrl + '/parties.json').then(function (parties) {
+        return parties.map(function (party) {
+            return _.assign(party, { selected: false });
+        })
+    });
 
-    this.listTemplateFn = Handlebars.compile(document.querySelector('#constituency-list-template').innerHTML);
-    this.listContainerElement = document.querySelector('#constituencies-list');
+    $(this.element).on('click', '.btn-clear-filter', function () {
 
-    if (constituenciesPromise.state() === 'pending') {
-        $.getJSON(VFP_CONFIG_DATA.apiBaseUrl + '/constituencies.json', constituenciesPromise.resolve);
-    }
+        window.location.href = '#party-trends';
+        filter = null;
 
-    constituenciesPromise.then(function (constituencies) {
-        var autocomplete;
-
-        this.listContainerElement.innerHTML = this.listTemplateFn({
-            constituencies: constituencies
+        parentTab.navItems.forEach(function (navItem) {
+            navItem.selected = false;
         });
-        autocomplete = new Autocomplete('constituency-search', {valueNames: ['constituency']});
-        autocomplete.list.addEventListener('click', autocomplete.hideCompletions.bind(autocomplete));
 
-        router.get('constituencies/:constituencySlug', function (req) {
+        this.resetSelected();
 
-            map.selectBySlug.call(map, req.params.constituencySlug);
-            this.selectConstituencyBySlug(req.params.constituencySlug);
-        }.bind(this));
+        map.reset();
+        map.resetColours();
+
+        parentTab.render();
 
     }.bind(this));
 }
 
-ConstituencyTab.prototype.display = function (display) {
-    this.$element.toggle(display);
-    if (display === false) {
-        this.element.querySelector('#pie-chart-results').innerHTML = '';
-        this.element.querySelector('.search').value = '';
-    }
+ChloroplethTab.prototype.selectBySlug = function selectBySlug (slug) {
+
+    this.resetSelected();
+
+    this.partiesPromise.then(function (parties) {
+
+        var select = _.find(parties, {slug : slug});
+        select.selected = true;
+        this.render();
+
+    }.bind(this));
+
 };
 
-ConstituencyTab.prototype.selectConstituencyBySlug = function selectConstituencyBySlug(slug) {
-    constituenciesPromise.then(function (constituencies) {
+ChloroplethTab.prototype.resetSelected = function resetSelected () {
+    this.partiesPromise.then(function (parties) {
 
-        var found = _.find(constituencies, {constituency_slug: slug});
-
-        document.querySelector('.search').value = found.constituency_name;
-
-        $.getJSON(getConstituencyUrl(found.constituency_slug)).then(function (constituency) {
-            new PieChart(constituency, null, true);
+        parties.forEach(function (party) {
+            party.selected = false;
         });
+
     });
 };
 
+ChloroplethTab.prototype.render = function render() {
+
+    //@TODO These are returning borked responses...
+    var rejected = [
+        'alliance-party-of-northern-ireland',
+        'democratic-unionist-party',
+        'social-democratic-and-labour-party',
+        'sinn-fein'
+    ];
+
+    this.partiesPromise.then(function (parties) {
+
+        parties = _.reject(parties, function (party) {
+            return rejected.indexOf(party.slug) !== -1;
+        });
+
+        this.element.innerHTML = this.templateFn({
+            items: parties
+        });
+
+    }.bind(this));
+
+};
 
 
 module.exports = LeadingParties;

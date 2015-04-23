@@ -5,12 +5,10 @@ var _ = require('lodash');
 var d3 = require('d3');
 var topojson = require('topojson');
 var $ = require('jQuery');
-
 var CONFIG = require('./config');
 
-
+var parties = CONFIG.parties;
 var leadingConstituenciesPromise = $.getJSON(CONFIG.apiBaseUrl + '/constituencies/results/parties.json?filters=leading');
-var partiesPromise = $.getJSON(CONFIG.apiBaseUrl + '/parties.json');
 
 /**
  * Gets a slugified version of a string
@@ -244,6 +242,7 @@ Map.prototype.resetColours = function resetColours () {
             _.forEach(constituencies, function (constituency) {
                 var constituencyNode = svgDoc.querySelector('.' + slugify(constituency.constituency_name));
                 constituencyNode.classList.remove('party-' + constituency.party_name.toLowerCase().replace(/ /g, '-'));
+                constituencyNode.style.fill = null;
             });
         });
 
@@ -270,6 +269,57 @@ Map.prototype.tabulate = function tabulate(graphics, constituencies) {
         var mapElement = graphics.select('.' + e.target.parentNode.classList.item(0));
         this.getToggleSelectedAreaFn(graphics)(mapElement.data()[0]);
     }, this));
+};
+
+
+/**
+ * Toggle different map modes
+ */
+
+
+Map.prototype.mapStrengthOfParty = function mapStrengthOfParty (partySlug) {
+
+    this.resetColours();
+    $.getJSON(CONFIG.apiBaseUrl + '/parties/' + partySlug + '/constituencies/results.json')
+
+        .then(function (constituencies) {
+
+            // Find maximum votes_percentage
+            var max_value = 0.0;
+
+            _.forEach(constituencies, function (constituency) {
+                if (constituency.votes_percentage > max_value) {
+                    max_value = constituency.votes_percentage
+                }
+            });
+
+            // Find party colours
+            for (var i = 0; i < parties.length; i++) {
+                if (partySlug == parties[i]['slug']) {
+                    var range = parties[i]['colour_scale'];
+                }
+            }
+
+            // Set colour scale
+            var colours = d3.scale.quantize().domain([0, max_value]).range(range);
+
+            this.loadedSvg.then(function (svgDoc) {
+                _.forEach(constituencies, function (constituency) {
+                    var constituencyNode = svgDoc.querySelector('.' + slugify(constituency.constituency_name));
+                    d3.select(constituencyNode)
+                        .style("fill", function (d) {
+                            if (constituency.votes_percentage == 0.0) {
+                                return "#c0c0c0"
+                            } else {
+                                return colours(constituency.votes_percentage);
+                            }
+                        });
+                });
+
+            });
+
+        }.bind(this))
+    ;
 };
 
 /**

@@ -24,6 +24,7 @@ title: "Country results"
     <section id="country-results" class="u-page-padding" aria-hidden="false"></section>
 
     <script id="country-tab-list-template" type="text/x-handlebars-template">
+
         {{#each countries}}
         <li role="presentation">
             <a href="#countries/{{ slug }}" role="tab" class="tabber__nav__link" {{#if selected}} aria-selected="true" {{/if}}>
