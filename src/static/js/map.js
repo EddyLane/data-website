@@ -278,10 +278,8 @@ Map.prototype.tabulate = function tabulate(graphics, constituencies) {
 Map.prototype.mapStrengthOfIssue = function mapStrengthOfIssue (issueSlug) {
 
     this.resetColours();
-
-    //@TODO SWAP THESE TWO WHEN API SUPPORTS
-    //$.getJSON(CONFIG.apiBaseUrl + '/constituencies/results/issues/' + issueSlug + '/parties.json?filters=leading').then(this.mapConstituencyParties.bind(this);
-    $.getJSON(CONFIG.apiBaseUrl + '/constituencies/results/parties.json?filters=leading').then(this.mapConstituencyParties.bind(this));
+    $.getJSON(CONFIG.apiBaseUrl + '/constituencies/results/issues/' + issueSlug + '/parties.json?filters=leading')
+        .then(this.mapConstituencyParties.bind(this));
 
 };
 

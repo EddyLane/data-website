@@ -12,12 +12,6 @@ var issueResultsTemplatePromise = $.ajax({
     return Handlebars.compile(html);
 });
 
-var issueResultsSimpleTemplatePromise = $.ajax({
-    url: '/partials/results/issue-results-simple.html',
-    dataType: 'text'
-}).then(function (html) {
-    return Handlebars.compile(html);
-});
 
 var issueResultTemplatePromise = $.ajax({
     url: '/partials/results/issue-result.html',
@@ -26,12 +20,6 @@ var issueResultTemplatePromise = $.ajax({
     return Handlebars.compile(html);
 });
 
-var issueResultSimpleTemplatePromise = $.ajax({
-    url: '/partials/results/issue-result-simple.html',
-    dataType: 'text'
-}).then(function (html) {
-    return Handlebars.compile(html);
-});
 
 /**
  * Calculate the total votes for all parties for a particular issue
@@ -70,16 +58,15 @@ function formatIssuesForView(issues) {
  *
  * @param issues
  * @param target
- * @param {boolean} simple   use simple template
  * @constructor
  */
-function IssueResults(issues, target, simple) {
+function IssueResults(issues, target) {
+
     this.target = target || '#issue-results';
-    this.simple = simple === true;
 
     this.issues = formatIssuesForView(issues).map(function (issue, i) {
         issue.rank = i;
-        return new IssueResult(issue, this.simple);
+        return new IssueResult(issue);
     }.bind(this));
 
     this.render();
@@ -91,9 +78,8 @@ function IssueResults(issues, target, simple) {
  * @param issue
  * @constructor
  */
-function IssueResult(issue, simple) {
+function IssueResult(issue) {
     this.selected = issue.results[0];
-    this.simple = simple;
     _.assign(this, issue);
 }
 
@@ -103,7 +89,7 @@ function IssueResult(issue, simple) {
 IssueResult.prototype.render = function render() {
 
     var target = document.querySelector('.issue-' + this.issue_slug);
-    var promise = this.simple ? issueResultSimpleTemplatePromise : issueResultTemplatePromise;
+    var promise = issueResultTemplatePromise;
 
     promise.then(function (compiledTemplateFn) {
 
@@ -143,7 +129,7 @@ IssueResult.prototype.selectResult = function selectResult(result) {
 IssueResult.prototype.renderSelected = function renderSelected() {
 
     var target = document.querySelector('.issue-' + this.issue_slug);
-    var promise = this.simple ? issueResultSimpleTemplatePromise : issueResultTemplatePromise;
+    var promise = issueResultTemplatePromise;
 
     promise.then(function (compiledTemplateFn) {
 
@@ -159,7 +145,7 @@ IssueResult.prototype.renderSelected = function renderSelected() {
  */
 IssueResults.prototype.render = function render() {
     var target = document.querySelector(this.target);
-    var promise = this.simple ? issueResultsSimpleTemplatePromise : issueResultsTemplatePromise;
+    var promise = issueResultsTemplatePromise;
 
     promise.then(function (compiledTemplateFn) {
 

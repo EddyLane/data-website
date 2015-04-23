@@ -6,8 +6,6 @@ var $ = require('jQuery');
 var Grapnel = require('Grapnel');
 var _ = require('lodash');
 var VFP_CONFIG_DATA = require('../config');
-
-var IssueResults = require('../results/issue-results');
 var ConstituencyTab = require('./tabs/constituency-tab');
 var PartyTrendsTab = require('./tabs/party-trends-tab');
 

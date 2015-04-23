@@ -1,26 +1,25 @@
 'use strict';
 
+
 module.exports = {
     apiBaseUrl: 'https://api.voteforpolicies.org.uk/v1',
     parties: [
         {
             party: "Conservatives", slug: "conservatives", colour: "#0087DC",
-            colour_scale: ["#FFFFFF", "#F8E7C6", "#CEF190", "#9BED76", "#2DE3AE", "#0087DC"]
+            colour_scale: ["#FFFFFF", "#CCE7F8", "#99CFF1", "#66B7EA", "#339FE3", "#0087DC"]
         },
-
         {
             party: "Green Party", slug: "green-party", colour: "#75A92D",
-            colour_scale: ["#FFFFFF", "#EDD4CA", "#DCC09B", "#CBBE71", "#ABBA4C", "#75A92D"]
+            colour_scale: ["#FFFFFF", "#E3EED5", "#C8DDAB", "#ACCB81", "#91BA57", "#75A92D"]
         },
         {
-            party: "Scottish Green Party", slug: "scottish-green-party", colour: "#75A92D",
-            colour_scale: ["#FFFFFF", "#EDD4CA", "#DCC09B", "#CBBE71", "#ABBA4C", "#75A92D"]
+            party: "Scottish Green Party", slug: "scottish-green-party", colour: "#00B543",
+            colour_scale: ["#FFFFFF", "#CCF0D9", "#99E1B4", "#66D38E", "#33C469", "#00B543"]
         },
         {
             party: "Labour", slug: "labour", colour: "#D50000",
-            colour_scale: ["#FFFFFF", "#fee5d9", "#fcbba1", "#fc9272", "#fb6a4a", "#D50000"]
+            colour_scale: ["#FFFFFF", "#F7CCCC", "#EE9999", "#E66666", "#DD3333", "#D50000"]
         },
-
         {
             party: "Liberal Democrats", slug: "liberal-democrats", colour: "#FE8300",
             colour_scale: ["#FFFFFF", "#B4B5FE", "#87EFFE", "#5AFE83", "#ADFE2D", "#FE8300"]
